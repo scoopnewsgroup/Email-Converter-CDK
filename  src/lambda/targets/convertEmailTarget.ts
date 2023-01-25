@@ -1,4 +1,3 @@
-// import { S3 } from 'aws-sdk';
 import * as S3 from 'aws-sdk/clients/s3';
 import axios from 'axios';
 
@@ -15,12 +14,16 @@ export const handler = async (event: any) => {
 		const result = await s3
 			.getObject({ Bucket: bucket, Key: key })
 			.promise();
-		// let html = '../../../test.html';
-		let html = result.Body.toString();
+		let html = result.Body?.toString();
 
-		// Remove the "read in browser" link and email preferences/unsubscribe links from the file
-		// html = html.replace(/<a href.*?<\/a>/g, '');
-		html = html.replace(/<div class="cols2".*?<\/div>/g, ''); // I think this should remove all the parts of the email not wanted for Constant Contact
+		// Remove the "read in browser" link at the top of Hubspot email templates
+		html = html?.replace(/<a class="hubspot-mergetag".*?<\/a>/g, '');
+
+		// Remove the "copywright, email preferences, and unsubscribe section" below the email footer that appears at the bottom of Hubspot email templates
+		html = html?.replace(
+			/<div id="hs_cos_wrapper_unsubscribe".*?<\/div>/g,
+			''
+		);
 
 		// Create the email campaign in Constant Contact
 		const campaign = {
@@ -37,17 +40,19 @@ export const handler = async (event: any) => {
 				state_code: 'DC',
 			},
 		};
-		const response = await axios.post(
-			'https://api.constantcontact.com/v3/email_marketing/campaigns',
-			campaign,
-			{
-				headers: {
-					Authorization: `Bearer ${apiKey}`,
-					'Content-Type': 'application/json',
-				},
-			}
-		);
-		console.log(response.data);
+		const response = html
+			? await axios.post(
+					'https://api.constantcontact.com/v3/email_marketing/campaigns',
+					campaign,
+					{
+						headers: {
+							Authorization: `Bearer ${apiKey}`,
+							'Content-Type': 'application/json',
+						},
+					}
+			  )
+			: console.log('html is possibly undefined');
+		console.log(response?.data);
 	} catch (err) {
 		console.log(err);
 		throw err;
