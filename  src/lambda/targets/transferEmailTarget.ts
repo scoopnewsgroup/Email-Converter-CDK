@@ -1,32 +1,41 @@
-import * as AWS from 'aws-sdk';
+import { Handler } from 'aws-lambda';
 import axios from 'axios';
 
+const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
-const HUBSPOT_API_KEY = process.env.HUBSPOT_API_KEY;
-const TEMPLATE_ID = process.env.TEMPLATE_ID;
-const BUCKET_NAME = process.env.BUCKET_NAME ?? 'DEFAULT_BUCKET';
+const HUBSPOT_API_KEY = process.env.HUBSPOT_API_KEY ?? 'demo';
 
-export const transferTemplateLambda = async (
-	event: unknown,
-	context: unknown
-) => {
+export const transferTemplateLambda: Handler = async (event) => {
 	try {
-		// Make the API call to Hubspot to get the template by ID
-		const response = await axios.get(
-			`https://api.hubapi.com/templates/v3/templates/${TEMPLATE_ID}?hapikey=${HUBSPOT_API_KEY}`
-		);
+		const apiUrl =
+			'`https://api.hubapi.com/templates/v2/templates/${TEMPLATE_ID}?hapikey=${HUBSPOT_API_KEY}`';
+
+		// Make API call to Hubspot to get the most recently updated template
+		const response = await axios.get(apiUrl, {
+			headers: {
+				Authorization: `Bearer ${HUBSPOT_API_KEY}`,
+			},
+			params: {
+				limit: 1,
+				order_by: 'updated_at',
+				order_direction: 'desc',
+			},
+		});
 
 		const template = response.data;
 
+		// Create S3 putObject params
+		const params = {
+			Bucket: process.env.BUCKET_NAME,
+			Key: `emailTemplates/${template.id}.html`,
+			Body: template.html,
+			ContentType: 'text/html',
+		};
+
 		// Put the template into the S3 bucket
-		await s3
-			.putObject({
-				Bucket: BUCKET_NAME,
-				Key: `email-templates/${template.name}.html`,
-				Body: template.html,
-				ContentType: 'text/html',
-			})
-			.promise();
+		await s3.putObject(params).promise();
+
+		console.log('Success, object successfully uploaded to S3');
 	} catch (error) {
 		console.error(error);
 		throw error;

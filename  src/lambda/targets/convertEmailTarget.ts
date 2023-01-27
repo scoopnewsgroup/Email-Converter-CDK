@@ -1,9 +1,10 @@
+import { Handler } from 'aws-lambda';
 import * as S3 from 'aws-sdk/clients/s3';
 import axios from 'axios';
 
 const s3 = new S3();
 
-export const handler = async (event: any) => {
+export const handler: Handler = async (event) => {
 	const apiKey = process.env.CONSTANT_CONTACT_API_KEY;
 	try {
 		// Get the S3 bucket and key from the event
