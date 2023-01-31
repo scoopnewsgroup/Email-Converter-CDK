@@ -3,9 +3,21 @@ import * as S3 from 'aws-sdk/clients/s3';
 import axios from 'axios';
 
 const s3 = new S3();
+const apiKey = process.env.CONSTANT_CONTACT_API_KEY;
+const params = {
+	subject: '01/23/2022 FedScoop Newsletter',
+	from_email: 'tech@scoopnewsgroup.com',
+	reply_to_email: 'tech@scoopnewsgroup.com',
+	physical_address_in_footer: {
+		address_line1: '2001 K St Later #1411',
+		city: 'Washington, DC',
+		country_code: 'US',
+		postal_code: '20006',
+		state_code: 'DC',
+	},
+};
 
 export const handler: Handler = async (event) => {
-	const apiKey = process.env.CONSTANT_CONTACT_API_KEY;
 	try {
 		// Get the S3 bucket and key from the event
 		const bucket = event.Records[0].s3.bucket.name;
@@ -27,19 +39,13 @@ export const handler: Handler = async (event) => {
 		);
 
 		// Create the email campaign in Constant Contact
+		const dateStamp = new Date().valueOf(); // Will create a timestamp in Epoch time for current time
+		const name = key.toLowerCase().replace('.html', '') + dateStamp;
+
 		const campaign = {
-			name: '01/23/2022 FedScoop Newsletter',
-			subject: '01/23/2022 FedScoop Newsletter',
-			from_email: 'tech@scoopnewsgroup.com',
-			reply_to_email: 'tech@scoopnewsgroup.com',
+			...params,
+			name,
 			html_content: html,
-			physical_address_in_footer: {
-				address_line1: '2001 K St Later #1411',
-				city: 'Washington, DC',
-				country_code: 'US',
-				postal_code: '20006',
-				state_code: 'DC',
-			},
 		};
 		const response = html
 			? await axios.post(
