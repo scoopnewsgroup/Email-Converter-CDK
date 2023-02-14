@@ -88,7 +88,8 @@ const Form = () => {
 						id='template'
 						name='template'
 						value={selectedTemplate}
-						onChange={handleTemplateChange}>
+						onChange={handleTemplateChange}
+						required>
 						{templates.map((template) => (
 							<option
 								key={template}
@@ -120,6 +121,7 @@ const Form = () => {
 							setCampaign(e.target.value)
 						}
 						placeholder='Campaign Name (Constant Contact)'
+						required
 					/>
 				</label>
 				<label htmlFor='notes'>
